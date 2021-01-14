@@ -17,3 +17,14 @@ entre contenedores que corren en diferente nodo.
 Por último, veremos cómo gestionar el almacenamiento de imágenes y contenedores mediante un cluster Ceph.
 
 Cada uno de estos pasos se construye en un directorio de este repositorio.
+
+
+Los diferentes laboratorios se indican a continuación:
+
+
+
+* [Primeros pasos usando Alpine como distro minimalista](01-primeros-pasos-con-alpine)
+
+* [Primeros pasos usando Ubuntu 20.04 Focal como nodo LXD](01-primeros-pasos-con-ubuntu-focal)
+
+
