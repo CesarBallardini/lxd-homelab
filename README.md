@@ -11,7 +11,7 @@ Más adelante agregamos un nodo cliente, que solicita a través de la red al clu
 
 Luego agregamos otros nodos al cluster LXD, y verificamos cómo pasar contenedores de un nodo a otro.
 
-En un contexto de cñuster multinodo, podemos usar Software Defined Networks para crear redes adicionales, y compartirlas
+En un contexto de cluster multinodo, podemos usar Software Defined Networks para crear redes adicionales, y compartirlas
 entre contenedores que corren en diferente nodo.
 
 Por último, veremos cómo gestionar el almacenamiento de imágenes y contenedores mediante un cluster Ceph.
