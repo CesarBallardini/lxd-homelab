@@ -1,0 +1,179 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Para aprovechar este Vagrantfile necesita Vagrant y Virtualbox instalados:
+#
+#   * Virtualbox
+#
+#   * Vagrant
+#
+#   * Plugins de Vagrant:
+#       + vagrant-proxyconf y su configuracion si requiere de un Proxy para salir a Internet
+#       + vagrant-cachier
+#       + vagrant-disksize
+#       + vagrant-share
+#       + vagrant-vbguest
+
+VAGRANTFILE_API_VERSION = "2"
+
+HOSTNAME = "lxd1"
+DOMAIN   = "infra.ballardini.com.ar"
+
+
+$post_up_message = <<POST_UP_MESSAGE
+------------------------------------------------------
+Cluster LXD con un solo nodo
+
+URLS:
+ - host only - https://lxd1.ballardini.com.ar/
+              
+
+------------------------------------------------------
+POST_UP_MESSAGE
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.post_up_message = $post_up_message
+
+  # uso cachier con NFS solamente si el hostmanager gestiona los nombres en /etc/hosts del host
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.auto_detect = false
+    config.cache.scope = :box
+ end
+
+ config.vm.define HOSTNAME do |srv|
+
+    #srv.vm.box = "alpine/alpine64"
+    srv.vm.box = "generic/alpine312"
+    srv.vm.network "private_network", ip: "192.168.33.21"
+    #srv.vm.network "forwarded_port", guest: 22, host: 2220, host_ip: "127.0.0.1", id: 'ssh'
+
+
+
+    srv.vm.boot_timeout = 3600
+    srv.vm.box_check_update = true
+    srv.ssh.forward_agent = true
+    srv.ssh.forward_x11 = true
+    srv.vm.hostname = HOSTNAME
+
+    if Vagrant.has_plugin?("vagrant-vbguest") then
+        #srv.vbguest.auto_update = true
+        srv.vbguest.auto_update = false
+        srv.vbguest.no_install = false
+    end
+
+    srv.vm.synced_folder ".", "/vagrant", disabled: false, SharedFoldersEnableSymlinksCreate: false
+
+
+    srv.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.cpus = 2
+      vb.memory = "2048"
+
+      vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
+#      vb.customize ["modifyvm", :id, "--cableconnected1", "on"]
+#      vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"] # https://github.com/hashicorp/vagrant/issues/11777#issuecomment-661076612
+#      vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
+
+      # https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm mas parametros para personalizar en VB
+    end
+  end
+
+    ##
+    # Aprovisionamiento
+    #
+    config.vm.provision "ssh_pub_key", type: :shell do |s|
+      begin
+          ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+          s.inline = <<-SHELL
+            mkdir -p /root/.ssh/
+            touch /root/.ssh/authorized_keys
+            echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys
+            echo #{ssh_pub_key} >> /root/.ssh/authorized_keys
+          SHELL
+      rescue
+          puts "No hay claves publicas en el HOME de su pc"
+          s.inline = "echo OK sin claves publicas"
+      end
+    end
+
+    config.vm.provision "actualiza", type: "shell" do |s|
+        s.privileged = false
+        s.inline = <<-SHELL
+
+          # enable edge: 2021-01-13 LXD solo esta disponible en edge
+          echo "http://dl-cdn.alpinelinux.org/alpine/edge/main"      | sudo tee    /etc/apk/repositories
+          echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" | sudo tee -a /etc/apk/repositories
+          echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing"   | sudo tee -a /etc/apk/repositories
+
+          sudo apk update
+          sudo apk upgrade --available && sync
+          sudo apk add virtualbox-guest-additions virtualbox-guest-modules-virt
+
+          cat /etc/alpine-release
+
+        SHELL
+    end
+
+    config.vm.provision "instala_lxd", type: "shell" do |s|
+        s.privileged = false
+        s.inline = <<-SHELL
+
+          # Install LXD using apk:
+          sudo apk add lxd dbus jq sshpass
+
+          # If you plan to run systemd based Linux distributions (Debian, Ubuntu, etc.), add this to /etc/conf.d/lxc:
+          echo "systemd_container=yes" | sudo tee -a /etc/conf.d/lxc
+
+          # Enable and start the lxd service:
+          sudo rc-update add lxd
+          sudo rc-service lxd start
+
+          sudo rc-update add dbus
+          sudo rc-service dbus start
+
+          # We’ll need to enable and start the cgroups service
+          sudo rc-update add cgroups
+          sudo rc-service cgroups start
+
+          # Add cgfs to pam.d/system-login:
+          echo "session optional pam_cgfs.so -c freezer,memory,name=systemd,unified" | sudo tee -a /etc/pam.d/system-login
+
+          # Add user and group idmaps to LXC config:
+          echo "lxc.idmap = u 0 100000 65536" | sudo tee -a /etc/lxc/default.conf
+          echo "lxc.idmap = g 0 100000 65536" | sudo tee -a /etc/lxc/default.conf
+
+          # Add root (and other users as well) subuid and subgid:
+          echo "root:100000:65536" | sudo tee -a /etc/subuid
+          echo "root:100000:65536" | sudo tee -a /etc/subgid
+
+
+        SHELL
+    end
+
+    config.vm.provision "instala_rclocal", type: "shell" do |s| # https://stackoverflow.com/a/48931432
+        s.privileged = true
+        s.inline = <<-SHELL
+
+          rc-update add local default
+
+          cat <<-RCLOCAL | sed -e 's_^               __' > /etc/local.d/lxdinit.start
+                #!/bin/bash
+                #
+                # Finally, initialize LXD:
+                lxd init --auto
+                addgroup vagrant lxd
+                chgrp lxd /var/lib/lxd/unix.socket
+
+                rm /etc/local.d/lxdinit.start
+RCLOCAL
+
+          echo "SE REINICIA LA VM"
+          chmod o+x /etc/local.d/lxdinit.start
+          shutdown -r now
+
+        SHELL
+    end
+
+end
