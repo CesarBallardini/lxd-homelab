@@ -27,4 +27,5 @@ Los diferentes laboratorios se indican a continuación:
 
 * [Primeros pasos usando Ubuntu 20.04 Focal como nodo LXD](01-primeros-pasos-con-ubuntu-focal)
 
+* [Primeros pasos usando Debian 10 Buster como nodo LXD](01-primeros-pasos-con-debian-buster)
 
