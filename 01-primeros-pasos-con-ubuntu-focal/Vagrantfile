@@ -111,7 +111,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           sudo -E apt-get update -y -qq > /dev/null 2>&1
           sudo dpkg-reconfigure --frontend=noninteractive libc6 > /dev/null 2>&1
           sudo -E apt-get install linux-image-generic ${APT_OPTIONS} || true
-          sudo -E apt-get install linux-image-amd64 ${APT_OPTIONS}  || true
           sudo -E apt-get upgrade ${APT_OPTIONS} > /dev/null 2>&1
           sudo -E apt-get dist-upgrade ${APT_OPTIONS} > /dev/null 2>&1
           sudo -E apt-get autoremove -y > /dev/null 2>&1
