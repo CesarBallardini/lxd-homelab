@@ -18,10 +18,15 @@ Por último, veremos cómo gestionar el almacenamiento de imágenes y contenedor
 
 Cada uno de estos pasos se construye en un directorio de este repositorio.
 
+Esta serie de laboratorios usa ciertos nombres, direcciones y puertos que están fijados en el código.  
+Esto se hace así para aprovechar la familiaridad con esas constantes a lo largo de los labs.
+
+Los nombres de los nodos del cluster LXD son: `lxd1`, `lxd2`, `lxd3`.
+Las direcciones IP de los nodos del cluster son 192.168.33.11, 192.168.33.12, 192.168.33.13.
+El nombre de la estación de trabajo que accede al cluster remoto es `workstation`, su dirección IP es 192.168.33.10.
+La dirección de la red de los contenedores es 192.168.44.0/24.
 
 Los diferentes laboratorios se indican a continuación:
-
-
 
 * [Primeros pasos usando Alpine como distro minimalista](01-primeros-pasos-con-alpine)
 
