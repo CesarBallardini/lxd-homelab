@@ -1,0 +1,44 @@
+config:
+  core.https_address: 192.168.33.11:8443 # cada nodo tiene su propia direccion
+  core.trust_password: p3rico            # contraseña para ???
+
+networks:
+- config:
+    ipv4.address: 192.168.44.1/24
+    ipv4.nat: "true"
+    ipv6.address: none
+  description: ""
+  name: lxdbr0
+  type: bridge
+  project: default
+
+storage_pools:
+- config:
+    size: 7GB
+  description: ""
+  name: local
+  driver: zfs
+
+profiles:
+- config: {}
+  description: ""
+  devices:
+    eth0:
+      name: eth0
+      network: lxdbr0
+      type: nic
+    root:
+      path: /
+      pool: local
+      type: disk
+  name: default
+
+cluster:
+  server_name: lxd1   # cada nodo tiene su propio nombre
+  enabled: true
+  member_config: []
+  cluster_address: ""
+  cluster_certificate: ""
+  server_address: ""
+  cluster_password: ""
+

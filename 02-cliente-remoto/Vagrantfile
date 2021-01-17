@@ -1,0 +1,164 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Para aprovechar este Vagrantfile necesita Vagrant y Virtualbox instalados:
+#
+#   * Virtualbox
+#
+#   * Vagrant
+#
+#   * Plugins de Vagrant:
+#       + vagrant-proxyconf y su configuracion si requiere de un Proxy para salir a Internet
+#       + vagrant-cachier
+#       + vagrant-disksize
+#       + vagrant-share
+#       + vagrant-vbguest
+
+VAGRANTFILE_API_VERSION = "2"
+
+HOSTNAME = "lxd1"
+DOMAIN   = "infra.ballardini.com.ar"
+
+
+$post_up_message = <<POST_UP_MESSAGE
+------------------------------------------------------
+Cluster LXD con un solo nodo
+
+URLS:
+ - host only - https://lxd1.ballardini.com.ar/
+              
+
+------------------------------------------------------
+POST_UP_MESSAGE
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.post_up_message = $post_up_message
+
+  if Vagrant.has_plugin?("vagrant-hostmanager")
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = true
+    config.hostmanager.manage_guest = true
+    config.hostmanager.ignore_private_ip = false
+    config.hostmanager.include_offline = true
+
+    # uso cachier con NFS solamente si el hostmanager gestiona los nombres en /etc/hosts del host
+    if Vagrant.has_plugin?("vagrant-cachier")
+
+      config.cache.auto_detect = false
+      # W: Download is performed unsandboxed as root as file '/var/cache/apt/archives/partial/xyz' couldn't be accessed by user '_apt'. - pkgAcquire::Run (13: Permission denied)
+
+      config.cache.synced_folder_opts = {
+        owner: "_apt"
+      }
+      # Configure cached packages to be shared between instances of the same base box.
+      # More info on http://fgrehm.viewdocs.io/vagrant-cachier/usage
+      config.cache.scope = :box
+   end
+  end
+
+  config.vm.define HOSTNAME do |srv|
+    srv.vm.box = "ubuntu/focal64"
+    srv.vm.network "private_network", ip: "192.168.33.11"
+
+    srv.vm.boot_timeout = 3600
+    srv.vm.box_check_update = true
+    srv.ssh.forward_agent = true
+    srv.ssh.forward_x11 = true
+    srv.vm.hostname = HOSTNAME
+
+    if Vagrant.has_plugin?("vagrant-hostmanager")
+      srv.hostmanager.aliases = %W(#{HOSTNAME}.#{DOMAIN} )
+    end
+
+    if Vagrant.has_plugin?("vagrant-vbguest") then
+        srv.vbguest.auto_update = true
+        srv.vbguest.no_install = false
+    end
+
+    srv.vm.synced_folder ".", "/vagrant", disabled: false, SharedFoldersEnableSymlinksCreate: false
+
+
+    srv.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.cpus = 2
+      vb.memory = "2048"
+      vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
+
+      # https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm mas parametros para personalizar en VB
+    end
+
+    srv.vm.provision "instala_lxd", type: "shell" do |s|
+        s.privileged = false
+        s.path = "provision/instala-lxd.sh"
+    end
+  end
+
+
+  config.vm.define "workstation" do |cliente|
+    cliente.vm.box = "ubuntu/focal64"
+    cliente.vm.network "private_network", ip: "192.168.33.10"
+
+    cliente.vm.boot_timeout = 3600
+    cliente.vm.box_check_update = true
+    cliente.ssh.forward_agent = true
+    cliente.ssh.forward_x11 = true
+    cliente.vm.hostname = "workstation"
+
+    if Vagrant.has_plugin?("vagrant-hostmanager")
+      cliente.hostmanager.aliases = %W(#{HOSTNAME}.#{DOMAIN} )
+    end
+
+    if Vagrant.has_plugin?("vagrant-vbguest") then
+        cliente.vbguest.auto_update = true
+        cliente.vbguest.no_install = false
+    end
+
+    cliente.vm.synced_folder ".", "/vagrant", disabled: false, SharedFoldersEnableSymlinksCreate: false
+
+    cliente.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.cpus = 2
+      vb.memory = "2048"
+
+      # https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm mas parametros para personalizar en VB
+    end
+
+    cliente.vm.provision "instala_ws", type: "shell" do |s|
+        s.privileged = false
+        s.path = "provision/instala-ws.sh"
+    end
+  end
+
+
+  ##
+  # Provisioning para todas las VM (esto corre antes que el provisioning de cada una)
+  #
+  config.vm.provision "fix-no-tty", type: "shell" do |s|
+      s.privileged = false
+      s.inline = "sudo sed -i '/tty/!s/mesg n/tty -s \\&\\& mesg n/' /root/.profile"
+  end
+
+  config.vm.provision "actualiza", type: "shell" do |s|  # http://foo-o-rama.com/vagrant--stdin-is-not-a-tty--fix.html
+      s.privileged = false
+      s.path = "provision/actualiza.sh"
+  end
+
+  config.vm.provision "ssh_pub_key", type: :shell do |s|
+    begin
+        ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+        s.inline = <<-SHELL
+          mkdir -p /root/.ssh/
+          touch /root/.ssh/authorized_keys
+          echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys
+          echo #{ssh_pub_key} >> /root/.ssh/authorized_keys
+        SHELL
+    rescue
+        puts "No hay claves publicas en el HOME de su pc"
+        s.inline = "echo OK sin claves publicas"
+    end
+  end
+
+end
+

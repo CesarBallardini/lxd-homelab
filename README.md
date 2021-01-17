@@ -29,3 +29,4 @@ Los diferentes laboratorios se indican a continuación:
 
 * [Primeros pasos usando Debian 10 Buster como nodo LXD](01-primeros-pasos-con-debian-buster)
 
+* [Cómo acceder a un cluster en forma remota](02-cliente-a-traves-de-red)
