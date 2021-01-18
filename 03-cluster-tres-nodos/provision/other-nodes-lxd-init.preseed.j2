@@ -1,0 +1,33 @@
+config: {}
+networks: []
+storage_pools: []
+profiles: []
+cluster:
+  server_name: {{ server_name }}
+  enabled: true
+  member_config:
+  - entity: storage-pool
+    name: local
+    key: size
+    value: "3GB"
+    description: '"size" property for storage pool "local"'
+  - entity: storage-pool
+    name: local
+    key: source
+    value: ""
+    description: '"source" property for storage pool "local"'
+  - entity: storage-pool
+    name: local
+    key: zfs.pool_name
+    value: ""
+    description: '"zfs.pool_name" property for storage pool "local"'
+  cluster_address: {{ config.cluster_https_address }}
+  cluster_certificate: |
+    {% set renglones = environment.certificate.split('\n') -%}
+    {% for item in renglones -%}
+    {{ item }}
+    {% endfor %} 
+  server_address: {{server_address}}
+  cluster_password: {{cluster_password}}
+
+
