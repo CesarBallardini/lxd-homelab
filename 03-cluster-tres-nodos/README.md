@@ -53,7 +53,7 @@ vagrant@workstation:~$ lxc list
 Desde cualquier nodo del cluster, y desde workstation, puedo conectarme como root a cualquier contenedor mediante:
 
 ```bash
-lxc exec alpine -- sh
+lxc exec alpi1 -- sh
 lxc exec buster -- bash
 ```
 
@@ -62,8 +62,8 @@ lxc exec buster -- bash
 También se puede crear una cuenta de usuario no privilegiada y usarla para conectarnos al contenedor:
 
 ```bash
-lxc exec alpine -- adduser -D --home /home/pepe --shell /bin/ash pepe
-lxc exec alpine -- su - pepe
+lxc exec alpi1 -- adduser -D --home /home/pepe --shell /bin/ash pepe
+lxc exec alpi1 -- su - pepe
 ```
 
 En este caso usamos la red FAN de Ubuntu para que el espacio de direcciones de los contenedores sea el mismo 
