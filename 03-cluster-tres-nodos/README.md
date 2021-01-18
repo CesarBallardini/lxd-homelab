@@ -21,7 +21,11 @@ Todos los mandatos que haga usando `lxc` se ejecutan en el cluster por default.
 * Creo un contenedor con Alpine desde el nodo cliente
 
 ```bash
-time lxc launch images:alpine/3.12 alpine
+time lxc launch images:alpine/3.12 alpi1
+time lxc launch images:alpine/3.12 alpi2
+time lxc launch images:alpine/3.12 alpi3
+time lxc launch images:alpine/3.12 alpi4
+
 time lxc launch images:debian/10/cloud buster
 
 ```
@@ -29,13 +33,19 @@ time lxc launch images:debian/10/cloud buster
 
 ```text
 vagrant@workstation:~$ lxc list
-+--------+---------+-----------------------+------+-----------+-----------+----------+
-|  NAME  |  STATE  |         IPV4          | IPV6 |   TYPE    | SNAPSHOTS | LOCATION |
-+--------+---------+-----------------------+------+-----------+-----------+----------+
-| alpine | RUNNING | 192.168.44.3 (eth0)   |      | CONTAINER | 0         | lxd1     |
-+--------+---------+-----------------------+------+-----------+-----------+----------+
-| buster | RUNNING | 192.168.44.90 (eth0)  |      | CONTAINER | 0         | lxd1     |
-+--------+---------+-----------------------+------+-----------+-----------+----------+
++--------+---------+---------------------+------+-----------+-----------+----------+
+|  NAME  |  STATE  |        IPV4         | IPV6 |   TYPE    | SNAPSHOTS | LOCATION |
++--------+---------+---------------------+------+-----------+-----------+----------+
+| alpi1  | RUNNING | 240.11.0.93 (eth0)  |      | CONTAINER | 0         | lxd1     |
++--------+---------+---------------------+------+-----------+-----------+----------+
+| alpi2  | RUNNING | 240.12.0.20 (eth0)  |      | CONTAINER | 0         | lxd2     |
++--------+---------+---------------------+------+-----------+-----------+----------+
+| alpi3  | RUNNING | 240.13.0.60 (eth0)  |      | CONTAINER | 0         | lxd3     |
++--------+---------+---------------------+------+-----------+-----------+----------+
+| alpi4  | RUNNING | 240.11.0.104 (eth0) |      | CONTAINER | 0         | lxd1     |
++--------+---------+---------------------+------+-----------+-----------+----------+
+| buster | RUNNING | 240.12.0.52 (eth0)  |      | CONTAINER | 0         | lxd2     |
++--------+---------+---------------------+------+-----------+-----------+----------+
 
 ```
 
