@@ -95,7 +95,7 @@ lxc image list
 
 
 # lanzar un contenedor desde una imagen
-i
+
 time lxc launch local:alpine/3.12 alpi
 
 Creating alpi

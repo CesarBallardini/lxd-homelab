@@ -49,8 +49,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     srv.vm.network "private_network", ip: "192.168.33.21"
     #srv.vm.network "forwarded_port", guest: 22, host: 2220, host_ip: "127.0.0.1", id: 'ssh'
 
-
-
     srv.vm.boot_timeout = 3600
     srv.vm.box_check_update = true
     srv.ssh.forward_agent = true
@@ -72,10 +70,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.memory = "2048"
 
       vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
-#      vb.customize ["modifyvm", :id, "--cableconnected1", "on"]
-#      vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"] # https://github.com/hashicorp/vagrant/issues/11777#issuecomment-661076612
-#      vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
-
       # https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm mas parametros para personalizar en VB
     end
   end
@@ -160,18 +154,33 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
           cat <<-RCLOCAL | sed -e 's_^               __' > /etc/local.d/lxdinit.start
                 #!/bin/bash
+                # Esto debe correrse DESPUES de reiniciar la VM
                 #
                 # Finally, initialize LXD:
                 lxd init --auto
                 addgroup vagrant lxd
                 chgrp lxd /var/lib/lxd/unix.socket
 
+                if [ -n "${http_proxy}" ] || [ -n "${https_proxy}" ]
+                then
+                  # para que LXD pueda descargar las imagenes
+                  lxc config set core.proxy_http         "${http_proxy}"
+                  lxc config set core.proxy_https        "${https_proxy}"
+                  lxc config set core.proxy_ignore_hosts "${no_proxy}"
+
+                  # para que los contenedores del perfil default puedan acceder a internet
+                  lxc profile set default environment.http_proxy  "${http_proxy}"
+                  lxc profile set default environment.https_proxy "${https_proxy}"
+                  lxc profile set default environment.no_proxy    "${no_proxy}"
+                fi
+
                 rm /etc/local.d/lxdinit.start
+
 RCLOCAL
 
-          echo "SE REINICIA LA VM"
+          echo "======== SE APAGA LA VM === ejecute 'vagrant up' para levantarla nuevamente"
           chmod o+x /etc/local.d/lxdinit.start
-          shutdown -r now
+          shutdown --poweroff now
 
         SHELL
     end
