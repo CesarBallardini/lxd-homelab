@@ -150,6 +150,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           sudo lxd init --auto --storage-backend=zfs
           sudo usermod --append --groups lxd vagrant
 
+          if [ -n "${http_proxy}" ] || [ -n "${https_proxy}" ]
+          then
+            # para que LXD pueda descargar las imagenes
+            sudo -i lxc config set core.proxy_http         "${http_proxy}"
+            sudo -i lxc config set core.proxy_https        "${https_proxy}"
+            sudo -i lxc config set core.proxy_ignore_hosts "${no_proxy}"
+
+            # para que los contenedores del perfil default puedan acceder a internet
+            sudo -i lxc profile set default environment.http_proxy  "${http_proxy}"
+            sudo -i lxc profile set default environment.https_proxy "${https_proxy}"
+            sudo -i lxc profile set default environment.no_proxy    "${no_proxy}"
+          fi
+
         SHELL
     end
 end
