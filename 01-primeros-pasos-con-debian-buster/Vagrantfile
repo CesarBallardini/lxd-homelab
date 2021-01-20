@@ -145,6 +145,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           # https://forum.snapcraft.io/t/installing-snap-on-debian/6742
           # https://snapcraft.io/docs/installing-snap-on-debian
           sudo apt-get install snapd ${APT_OPTIONS}
+
+          if [ -n "${http_proxy}" ] || [ -n "${https_proxy}" ]
+          then
+            # https://snapcraft.io/docs/system-options#heading--proxy
+            sudo snap set system proxy.http="${http_proxy}"
+            sudo snap set system proxy.https="${https_proxy}"
+          fi
+
           sudo -i snap install core 
           sudo -i snap refresh core
 
