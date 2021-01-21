@@ -4,18 +4,30 @@ Se crea una VM con Vagrant, donde se instala de manera mínima LXD.
 
 ```bash
 # levanta el cluster LXD
-time vagrant up
+no_proxy=192.168.33.11,192.168.33.12,192.168.33.13,${no_proxy} time vagrant up
 ```
 
 * Ingreso al nodo cliente con:
 
 ```bash
 # levanta el cliente
-vagrant up workstation
+no_proxy=192.168.33.11,192.168.33.12,192.168.33.13,${no_proxy} vagrant up workstation
 vagrant ssh workstation
 ```
 
-Todos los mandatos que haga usando `lxc` se ejecutan en el cluster por default.
+La variable `no_proxy` se asigna con la lista de las direcciones IP o nombres de
+los nodos del cluster.  Esto es así cuando el ambiente donde corre el cluster LXD requiere
+utilizar un servicio de proxy para acceder a la internet.  Si usted no tiene definidas las 
+variables `http_proxy` ni `https_proxy` en su entorno de trabajo, puede correr los mandatos
+anteriores sin la asignación de `no_proxy`
+
+
+Los accesos a internet se necesitan para acceder a:
+* los repositorios de paquetes de la distrbución usada en los nodos y los contenedores
+* los repositorios de Snap
+* los repositorios de imágenes de contenedores para LXD
+
+Todos los mandatos `lxc` se ejecutan en el cluster por default.
 
 
 * Creo un contenedor con Alpine desde el nodo cliente
